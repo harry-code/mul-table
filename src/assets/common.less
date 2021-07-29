@@ -1,0 +1,23 @@
+.main-wrapper {
+    display: flex;
+
+    &-content {
+        width: 100%;
+        margin-top: 62px;
+        display: flex;
+
+        .sider {
+            height: calc(100vh - 62px);
+        }
+
+        .page-content {
+            width: 100%;
+            padding: 20px;
+        }
+
+        &>div:nth-child(2) {
+            width: calc(100% - 256px);
+            padding: 25px;
+        }
+    }
+}
