@@ -1,5 +1,6 @@
 import React from 'react';
-import { Form, Input, Button, Checkbox } from 'antd';
+import { Form, Input, Button, Checkbox, message } from 'antd';
+import { LoginIn } from '~/service/apis/user';
 import { useHistory } from 'react-router-dom';
 import './index.less'
 
@@ -14,9 +15,20 @@ const tailLayout = {
 
 function Login() {
     const history = useHistory();
-    const onFinish = (values: any) => {
-        history.push('/')
-        localStorage.setItem('token', 'lly')
+    const onFinish = async (values: any) => {
+        try {
+            const { code, data, msg } = await LoginIn(values)
+            if (code === 200) {
+                message.success(msg, 2, () => {
+                    history.push('/');
+                    localStorage.setItem('token', data.token);
+                })
+            } else {
+                message.error(msg)
+            }
+        } catch (error) {
+            console.error(error)
+        }
     };
 
     const onFinishFailed = (errorInfo: any) => {

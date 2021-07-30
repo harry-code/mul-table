@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import Bread from '~/components/views/bread'
+import Table from '~/components/views/table'
 
 export default () => {
+
     return <>
-        this is index32332221123
+        <Bread />
+        <Table />
     </>
 }
