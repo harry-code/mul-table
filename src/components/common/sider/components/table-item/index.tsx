@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Input, Popover, Collapse, Modal, Tooltip } from 'antd';
 import {
   PlusSquareOutlined,
-  MoreOutlined,
   FormOutlined,
   DeleteOutlined,
   ExclamationCircleOutlined,
@@ -11,23 +10,32 @@ import {
   PlusOutlined,
   CopyOutlined,
 } from '@ant-design/icons';
-import { saveOrUpdateTableInfo, getTableInfo } from '~/service/apis/table';
+import { 
+  saveOrUpdateTableInfo, 
+  saveOrUpdateSheetInfo,
+  getTableInfo,
+  getSheetInfo,
+ } from '~/service/apis/table';
 import './index.less'
 
 const { confirm } = Modal;
 const { Panel } = Collapse;
 
 export default ({ }) => {
-  const [tableItems, setTableItems] = useState<any[]>([])
+  const [tableItems, setTableItems] = useState<any[]>([]);
   useEffect(() => {
-    getTableInfoFn()
+   getTableInfoFn();
   }, [])
 
+  /**
+   * 获取当前用户拥有的表格
+   */
   const getTableInfoFn = async () => {
     try {
       const { code, data } = await getTableInfo();
       if (code === 200) {
         setTableItems(data);
+        // getSheetInfo(data[0]?.id);
       }
     } catch (error) {
       console.error(error);
@@ -46,13 +54,12 @@ export default ({ }) => {
 
   // 打开二级菜单操作气泡框
   const handleSheetVisibleChange = (first: number, i: number) => {
-    tableItems[first]['sheets'][i].actionVisible = !tableItems[first]['sheets'][i].actionVisible;
+    tableItems[first]['listSheetInfoSummartVO'][i].actionVisible = !tableItems[first]['listSheetInfoSummartVO'][i].actionVisible;
     setTableItems([...tableItems]);
   }
 
   // 重命名表格
-  const rename = (i: number, event: any) => {
-    console.log('event', event);
+  const rename = (i: number) => {
     tableItems[i].actionVisible = !tableItems[i].actionVisible;
     tableItems[i].renameFlag = !tableItems[i].renameFlag;
     setTableItems([...tableItems]);
@@ -65,8 +72,8 @@ export default ({ }) => {
 
   // 重命名sheet
   const renameSheet = (first: number, i: number) => {
-    tableItems[first].sheets[i].actionVisible = !tableItems[first].sheets[i].actionVisible;
-    tableItems[first].sheets[i].renameFlag = !tableItems[first].sheets[i].renameFlag;
+    tableItems[first].listSheetInfoSummartVO[i].actionVisible = !tableItems[first].listSheetInfoSummartVO[i].actionVisible;
+    tableItems[first].listSheetInfoSummartVO[i].renameFlag = !tableItems[first].listSheetInfoSummartVO[i].renameFlag;
     setTableItems([...tableItems]);
     setTimeout(() => {
       // tableItems[i].inputRef.current!.focus({
@@ -77,23 +84,24 @@ export default ({ }) => {
 
   // 新增表
   const addTable = async () => {
-    const _arry: any = tableItems.concat([{
-      tableName: '未命名数据表' + (tableItems.length + 1),
+    let _arry: any = tableItems.concat([{
+      name: '未命名数据表' + (tableItems.length + 1),
       actionVisible: false,
       renameFlag: false,
-      sheets: [
-        {
-          sheetName: '任务表1',
-          actionVisible: false,
-          renameFlag: false,
-        }
-      ]
+      // sheets: [
+      //   {
+      //     sheetName: '任务表1',
+      //     actionVisible: false,
+      //     renameFlag: false,
+      //   }
+      // ]
     }])
+    
     try {
       const { code } = await saveOrUpdateTableInfo({
         name: '未命名数据表' + (tableItems.length + 1)
       })
-      if (code === 200) {
+      if ( code === 200) {
         setTableItems(_arry)
       }
     } catch (error) {
@@ -103,15 +111,22 @@ export default ({ }) => {
   }
 
   // 新增sheet
-  const addSheet = (i: number) => {
-    tableItems[i].sheets.push(
-      {
-        sheetName: '任务表' + (tableItems[i].sheets.length + 1),
-        actionVisible: false,
-        renameFlag: false,
+  const addSheet = async (i: number) => {
+    const params = {
+      sheetName: '任务表' + (tableItems[i].listSheetInfoSummartVO.length + 1),
+      tableInfoId: tableItems[i].id
+    }
+    try {
+      console.log('tableItems[i].listSheetInfoSummartVO', tableItems[i])
+      const { code } = await saveOrUpdateSheetInfo(params)
+      if (code === 200) {
+        tableItems[i].listSheetInfoSummartVO = tableItems[i].listSheetInfoSummartVO || [];
+        tableItems[i].listSheetInfoSummartVO.push(params);
+        setTableItems([...tableItems]);
       }
-    )
-    setTableItems([...tableItems]);
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   // 删除表
@@ -121,7 +136,7 @@ export default ({ }) => {
       centered: true,
       maskClosable: true,
       icon: <ExclamationCircleOutlined />,
-      content: `确认要删除数据表 ${tableItems[i].tableName} 吗？`,
+      content: `确认要删除数据表 ${tableItems[i].name} 吗？`,
       okText: '删除',
       okType: 'danger',
       cancelText: '取消',
@@ -138,7 +153,7 @@ export default ({ }) => {
   const content = (i: number) => (
     <ul>
       <li onClick={(event) => {
-        rename(i, event)
+        rename(i)
         event.stopPropagation();
       }}>
         <FormOutlined />
@@ -184,19 +199,29 @@ export default ({ }) => {
     <div className="table-item">
       <Collapse
         className="table-item-collapse"
-        defaultActiveKey={['未命名数据表1']}
+        defaultActiveKey={['']}
         ghost={true}
         onChange={callback}>
         {
-          tableItems?.map((item, index) => {
+          tableItems?.map((item: any, index: number) => {
             return (
               <Panel
                 header={
                   item.renameFlag ? <Input
-                    onBlur={(v) => {
+                    onBlur={async (v) => {
                       tableItems[index].renameFlag = !tableItems[index].renameFlag;
-                      tableItems[index].tableName = v.target.defaultValue;
-                      setTableItems([...tableItems])
+                      tableItems[index].name = v.target.defaultValue;
+                      try {
+                        const { code } = await saveOrUpdateTableInfo({
+                          name: v.target.defaultValue,
+                          id: tableItems[index].id
+                        })
+                        if (code === 200) {
+                          setTableItems([...tableItems])
+                        }
+                      } catch (error) {
+                        console.error(error);
+                      }
                     }}
                     defaultValue={item.name}
                     className="table-item-wrapper-table"
@@ -204,7 +229,7 @@ export default ({ }) => {
                   /> : <span className="table-item-wrapper-table">{item.name}</span>
                 }
                 className={item.actionVisible ? 'ant-collapse-header-active' : ''}
-                key={item.id} extra={item.renameFlag ? null : (
+                key={item.name} extra={item.renameFlag ? null : 
                   <>
                     <Tooltip title="新增sheet">
                       <PlusSquareOutlined
@@ -212,8 +237,7 @@ export default ({ }) => {
                           event.stopPropagation();
                           addSheet(index);
                         }}
-                        className={item.actionVisible ? '' : "table-item-collapse-headerIcon"}
-                        style={{ marginRight: '10px', fontSize: '20px' }} />
+                        className={item.actionVisible ? '' : "table-item-collapse-headerIcon"}/>
                     </Tooltip>
 
                     <Popover
@@ -228,20 +252,31 @@ export default ({ }) => {
                         }}
                         className={item.actionVisible ? '' : "table-item-collapse-headerIcon"} />
                     </Popover>
-                  </>)}>
+                  </>}>
 
                 {
-                  item?.sheets?.map((ite, idx) => {
+                  item?.listSheetInfoSummartVO?.map((ite: any, idx: number) => {
                     return (
                       <div className="table-item-collapse-sheet" key={ite.sheetName}>
                         <div>
                           <ProfileOutlined />
                           {
                             ite.renameFlag ? <Input
-                              onBlur={(v) => {
-                                tableItems[index].sheets[idx].renameFlag = !tableItems[index].sheets[idx].renameFlag;
-                                tableItems[index].sheets[idx].sheetName = v.target.defaultValue;
-                                setTableItems([...tableItems])
+                              onBlur={async (v) => {
+                                tableItems[index].listSheetInfoSummartVO[idx].renameFlag = !tableItems[index].listSheetInfoSummartVO[idx].renameFlag;
+                                tableItems[index].listSheetInfoSummartVO[idx].sheetName = v.target.defaultValue;
+                                try {
+                                  const { code } = await saveOrUpdateSheetInfo({
+                                    sheetName: v.target.defaultValue,
+                                    tableInfoId: tableItems[index].id,
+                                    id: ite.sheetId
+                                  })
+                                  if (code === 200) {
+                                    setTableItems([...tableItems]);
+                                  }
+                                } catch (error) {
+                                  console.error(error);
+                                }
                               }}
                               defaultValue={ite.sheetName}
                               className="table-item-wrapper-table"
@@ -249,18 +284,19 @@ export default ({ }) => {
                             /> : <span className="table-item-collapse-sheet-name">{ite.sheetName}</span>
                           }
                         </div>
+                        {/* 操作的气泡 */}
                         <div className="table-item-collapse-sheet-icon">
                           <Popover
                             visible={ite.actionVisible}
                             placement="bottom"
-                            onVisibleChange={() => handleSheetVisibleChange(index, idx)}
                             content={() => sheetContent(index, idx)}
+                            onVisibleChange={() => handleSheetVisibleChange(index, idx)}
                             trigger="click">
                             <EllipsisOutlined
                               onClick={event => {
                                 event.stopPropagation();
                               }}
-                              className={ite.actionVisible ? '' : "table-item-collapse-headerIcon"}
+                              className={!ite.renameFlag ? '' : "table-item-collapse-headerIcon"}
                             />
                           </Popover>
 

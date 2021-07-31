@@ -1,0 +1,28 @@
+.box {
+  position: relative;
+  display: flex;
+  &-right,
+  &-bottom {
+    cursor: pointer;
+  }
+  &-column-resizable,
+  &-row-resizable {
+    display: flex;
+  }
+}
+.react-resizable {
+  position: relative;
+  background-clip: padding-box;
+  border: 1px solid #dee0e3;
+  line-height: 40px;
+}
+
+.react-resizable-handle {
+  position: absolute;
+  right: -5px;
+  bottom: 0;
+  z-index: 1;
+  width: 10px;
+  height: 100%;
+  cursor: col-resize;
+}

@@ -1,106 +1,107 @@
 .table-item {
-    &-collapse {
-        .ant-collapse-header {
-            &:hover {
-                background: rgba(31, 35, 41, .1);
-                border-radius: 5px;
-            }
+  &-collapse {
+    .ant-collapse-header {
+      &:hover {
+        background: rgba(31, 35, 41, 0.1);
+        border-radius: 5px;
+      }
 
-            &:hover .table-item-collapse-headerIcon {
-                display: inline-block;
-            }
-        }
-
-        .ant-collapse-header-active {
-            background: rgba(31, 35, 41, .1);
-            border-radius: 5px;
-        }
-
-        &-sheet {
-            margin-left: 15px;
-            cursor: pointer;
-
-            &-name {
-                margin-left: 10px;
-            }
-        }
-
-        &-headerIcon {
-            display: none;
-        }
-
-        .ant-collapse-content-box {
-            padding: 0 0 !important;
-        }
-
-        &-sheet {
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            height: 40px;
-            line-height: 40px;
-            padding-left: 10px;
-
-            &-icon {
-                margin-right: 10px;
-                display: none;
-            }
-        }
-
-        &-sheet:hover {
-            background: rgba(31, 35, 41, .1);
-        }
-
-        &-sheet:hover .table-item-collapse-sheet-icon {
-            display: inline-block;
-        }
+      &:hover .table-item-collapse-headerIcon {
+        display: inline-block;
+      }
     }
 
-    &-add {
-        border-top: 1px solid #dee0e3;
-        margin-top: 20px;
-        padding: 15px 0;
-        cursor: pointer;
-
-        span {
-            margin-left: 10px;
-        }
+    .ant-collapse-header-active {
+      background: rgba(31, 35, 41, 0.1);
+      border-radius: 5px;
     }
 
-    &-add:hover {
-        background: #dee0e3;
+    &-sheet {
+      margin-left: 15px;
+      cursor: pointer;
+
+      &-name {
+        margin-left: 10px;
+      }
     }
+
+    &-headerIcon {
+      display: none;
+    }
+
+    .ant-collapse-content-box {
+      padding: 0 0 !important;
+    }
+
+    &-sheet {
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      height: 40px;
+      line-height: 40px;
+      padding-left: 10px;
+
+      &-icon {
+        margin-right: 10px;
+        display: none;
+      }
+      .ant-input {
+        width: 85%;
+      }
+    }
+
+    &-sheet:hover {
+      background: rgba(31, 35, 41, 0.1);
+    }
+
+    &-sheet:hover .table-item-collapse-sheet-icon {
+      display: inline-block;
+    }
+  }
+
+  &-add {
+    border-top: 1px solid #dee0e3;
+    margin-top: 20px;
+    padding: 15px 0;
+    cursor: pointer;
+
+    span {
+      margin-left: 10px;
+    }
+  }
+
+  &-add:hover {
+    background: #dee0e3;
+  }
 }
 
 .ant-popover-inner {
-    .ant-popover-inner-content {
-        padding: 0;
+  .ant-popover-inner-content {
+    padding: 0;
 
-        ul {
-            padding-left: 0;
+    ul {
+      padding-left: 0;
 
-            li {
-                list-style: none;
-                cursor: pointer;
-                padding: 10px;
+      li {
+        list-style: none;
+        cursor: pointer;
+        padding: 10px;
 
-                span {
-                    margin-left: 10px;
-                }
-            }
-
-            li:hover {
-                background: #dee0e3;
-            }
+        span {
+          margin-left: 10px;
         }
-    }
+      }
 
+      li:hover {
+        background: #dee0e3;
+      }
+    }
+  }
 }
 
 .ant-modal-root {
-
-    .ant-modal-mask,
-    .ant-modal-wrap {
-        z-index: 1200;
-    }
+  .ant-modal-mask,
+  .ant-modal-wrap {
+    z-index: 1200;
+  }
 }

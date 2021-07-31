@@ -19,12 +19,10 @@ function Login() {
         try {
             const { code, data, msg } = await LoginIn(values)
             if (code === 200) {
-                message.success(msg, 2, () => {
+                message.success('登录成功', 2, () => {
                     history.push('/');
                     localStorage.setItem('token', data.token);
                 })
-            } else {
-                message.error(msg)
             }
         } catch (error) {
             console.error(error)

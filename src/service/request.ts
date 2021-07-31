@@ -1,3 +1,4 @@
+import { message } from 'antd';
 import axios from 'axios';
 
 type ResponseType =
@@ -25,7 +26,7 @@ type API_TYPE = {
 
 export const API_URL: API_TYPE = {
   // development: 'http://124.71.147.249:8004',
-  development: 'http://192.168.1.52:8087',
+  development: 'http://121.196.179.144:8083',
   production: 'http://124.71.147.249:8004',
 };
 
@@ -44,6 +45,9 @@ const Request = async (params: RequestParams): Promise<ResponseData> => {
       headers,
       responseType,
     }).then(res => res.data);
+    if (result.code !== 200) {
+      message.error(result.msg)
+    }
     return result;
   } catch (error) {
     return {

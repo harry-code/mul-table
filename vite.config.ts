@@ -26,6 +26,7 @@ export default defineConfig({
         rewrite: (path: string) => path.replace(/^\/api/, '')
       }
     },
-    hmr: true
+    hmr: true,
+    open: true,
   }
 })

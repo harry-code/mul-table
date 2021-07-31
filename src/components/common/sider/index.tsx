@@ -7,8 +7,6 @@ import './index.less'
 const { Search } = Input;
 
 function Sider() {
-
-  const history = useHistory();
   const onSearch = (value: any) => console.log(value);
   return (
     <div className="sider">
