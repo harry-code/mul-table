@@ -10,12 +10,13 @@ import {
   PlusOutlined,
   CopyOutlined,
 } from '@ant-design/icons';
-import { 
-  saveOrUpdateTableInfo, 
+import {
+  saveOrUpdateTableInfo,
   saveOrUpdateSheetInfo,
   getTableInfo,
   getSheetInfo,
- } from '~/service/apis/table';
+} from '~/service/apis/table';
+import Pubsub from 'pubsub-js';
 import './index.less'
 
 const { confirm } = Modal;
@@ -24,7 +25,7 @@ const { Panel } = Collapse;
 export default ({ }) => {
   const [tableItems, setTableItems] = useState<any[]>([]);
   useEffect(() => {
-   getTableInfoFn();
+    getTableInfoFn();
   }, [])
 
   /**
@@ -96,12 +97,12 @@ export default ({ }) => {
       //   }
       // ]
     }])
-    
+
     try {
       const { code } = await saveOrUpdateTableInfo({
         name: '未命名数据表' + (tableItems.length + 1)
       })
-      if ( code === 200) {
+      if (code === 200) {
         setTableItems(_arry)
       }
     } catch (error) {
@@ -148,6 +149,24 @@ export default ({ }) => {
         console.log('Cancel');
       },
     });
+  }
+
+  // 选中sheet
+  const choseSheet = (e: any) => {
+    const { index, idx } = e.target.dataset;
+    const args = Array.from(document.getElementsByClassName('table-item-collapse-sheet'));
+    args.forEach((element: any) => {
+      element.style.background = 'inherit';
+    });
+    e.currentTarget.style.background = 'rgba(31, 35, 41, 0.1)';
+    const jsonStr = JSON.stringify({
+      tableInfoId: tableItems[index].id,
+      tableName: tableItems[index].name,
+      sheetId: tableItems[index].listSheetInfoSummartVO[idx].sheetId,
+      sheetName: tableItems[index].listSheetInfoSummartVO[idx].sheetName,
+    })
+    localStorage.setItem('tableInfo', jsonStr);
+    Pubsub.publish('tableInfo', jsonStr);
   }
 
   const content = (i: number) => (
@@ -229,7 +248,7 @@ export default ({ }) => {
                   /> : <span className="table-item-wrapper-table">{item.name}</span>
                 }
                 className={item.actionVisible ? 'ant-collapse-header-active' : ''}
-                key={item.name} extra={item.renameFlag ? null : 
+                key={item.name} extra={item.renameFlag ? null :
                   <>
                     <Tooltip title="新增sheet">
                       <PlusSquareOutlined
@@ -237,7 +256,7 @@ export default ({ }) => {
                           event.stopPropagation();
                           addSheet(index);
                         }}
-                        className={item.actionVisible ? '' : "table-item-collapse-headerIcon"}/>
+                        className={item.actionVisible ? '' : "table-item-collapse-headerIcon"} />
                     </Tooltip>
 
                     <Popover
@@ -257,7 +276,12 @@ export default ({ }) => {
                 {
                   item?.listSheetInfoSummartVO?.map((ite: any, idx: number) => {
                     return (
-                      <div className="table-item-collapse-sheet" key={ite.sheetName}>
+                      <div
+                        className="table-item-collapse-sheet"
+                        key={ite.sheetName}
+                        data-index={index}
+                        data-idx={idx}
+                        onClick={choseSheet}>
                         <div>
                           <ProfileOutlined />
                           {
@@ -281,7 +305,10 @@ export default ({ }) => {
                               defaultValue={ite.sheetName}
                               className="table-item-wrapper-table"
                               width={120}
-                            /> : <span className="table-item-collapse-sheet-name">{ite.sheetName}</span>
+                            /> : <span
+                              className="table-item-collapse-sheet-name"
+                              data-index={index}
+                              data-idx={idx}>{ite.sheetName}</span>
                           }
                         </div>
                         {/* 操作的气泡 */}

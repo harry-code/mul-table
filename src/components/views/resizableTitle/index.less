@@ -1,15 +1,23 @@
 .box {
   position: relative;
   display: flex;
+
   &-right,
   &-bottom {
     cursor: pointer;
   }
+
   &-column-resizable,
   &-row-resizable {
     display: flex;
+    cursor: pointer;
+  }
+
+  &-row-resizable {
+    cursor: auto;
   }
 }
+
 .react-resizable {
   position: relative;
   background-clip: padding-box;
