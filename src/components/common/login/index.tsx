@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Form, Input, Button, Checkbox, message } from 'antd';
 import { LoginIn } from '~/service/apis/user';
 import { useHistory } from 'react-router-dom';
@@ -14,14 +14,25 @@ const tailLayout = {
 
 
 function Login() {
+    useEffect(() => {
+        const socket = new WebSocket('ws://121.196.179.144:8083/api/rest/websocket');
+        socket.addEventListener('open', () => {
+            socket.send('Hello Server!');
+        })
+
+        socket.addEventListener('message', (event) => {
+            console.log('Message from server ', event.data);
+        })
+    }, [])
     const history = useHistory();
     const onFinish = async (values: any) => {
         try {
-            const { code, data, msg } = await LoginIn(values)
+            const { code, data: { token, userInfo }, msg } = await LoginIn(values)
             if (code === 200) {
+                localStorage.setItem('token', token);
+                localStorage.setItem('userInfo', JSON.stringify(userInfo));
                 message.success('登录成功', 2, () => {
                     history.push('/');
-                    localStorage.setItem('token', data.token);
                 })
             }
         } catch (error) {

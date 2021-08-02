@@ -6,7 +6,7 @@ export default () => {
     useEffect(() => {
         // 监听表格信息变化
         Pubsub.subscribe('tableInfo', (msg: string, data: any) => {
-            setTableInfo(JSON.parse(data))
+            setTableInfo(data);
         })
     }, [])
     const [tableInfo, setTableInfo] = useState<{ tableName: string, sheetName: string }>({ tableName: '未命名数据表1', sheetName: '任务表1' })

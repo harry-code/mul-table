@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Dropdown, Input, Form, Select, Button } from 'antd';
 import { ResizableBox } from 'react-resizable';
+import Pubsub from 'pubsub-js';
 import {
     saveFieldThead,
     getSheetThead,
     saveOrUpdateLineInfo,
     saveOrUpdateLinesInfo,
     getSheetInfoExcludeThead,
+    delThead,
+    delCellRow,
+    shareSheet,
 } from '~/service/apis/table';
 import './index.less'
 
@@ -22,45 +26,56 @@ const tailLayout = {
 
 export default () => {
     // 规定最大行数
-    const ROW_COUNT = 9999;
+    const ROW_COUNT = 30;
     const [form] = Form.useForm();
     const [theadData, setThead] = useState<any>([]);
     const [rowCount, setRowCount] = useState<any>([]);
 
     useEffect(() => {
-        (async function () {
-            try {
-                const sheetId = JSON.parse(localStorage.getItem('tableInfo')!).sheetId;
-                const { code, data } = await getSheetThead(sheetId);
-                const sheetInfo = await getSheetInfoExcludeThead(sheetId);
-                if (code === 200) {
-                    setThead(data)
-                }
-                if (sheetInfo.code === 200) {
-                    const { data } = sheetInfo;
-                    let _arry = [];
-                    for (let i = 1; i < ROW_COUNT; i++) {
-                        const res = data.filter((item: any) => item.lineNum === i);
-                        if (res.length === 0) {
-                            break
-                        }
+        // 监听表格信息变化
+        Pubsub.subscribe('tableInfo', async (msg: string, data: any) => {
+            const { sheetId } = data;
+            await getInitData(sheetId);
+        })
+    }, [])
+
+    // 获取表头与单元格数据
+    async function getInitData(sheetId: any) {
+        try {
+            const { code, data } = await getSheetThead(sheetId);
+            const sheetInfo = await getSheetInfoExcludeThead(sheetId);
+            if (code === 200) {
+                setThead(data)
+            }
+            if (sheetInfo.code === 200) {
+                const { data } = sheetInfo;
+                console.log('data', data);
+                let _arry = [];
+                for (let i = 1; i < ROW_COUNT; i++) {
+                    const res = data.filter((item: any) => item.lineNum === i);
+                    if (res.length !== 0) {
                         _arry.push(res)
                     }
-                    setRowCount([..._arry]);
+                    // if (res.length === 0) {
+                    //     break
+                    // }
                 }
-            } catch (error) {
-                console.error(error);
+                setRowCount([..._arry]);
             }
-        })()
-    }, [])
+        } catch (error) {
+            console.error(error);
+        }
+    }
     // 新增一列
     const addColumn = async () => {
         const sheetId = JSON.parse(localStorage.getItem('tableInfo')!).sheetId;
+        const nameNum = (+(theadData[theadData.length - 1]?.chineseFieldName[theadData[theadData.length - 1]?.chineseFieldName.length - 1]) + 1) || 1;
         let _arry = theadData.concat({
-            chineseFieldName: `未命名` + (theadData.length + 1),
+            chineseFieldName: `未命名` + nameNum,
             dropDownVisible: false,
         })
         setThead(_arry)
+
         const listLineInfoDTO = rowCount.length > 0 ? rowCount.map((ite: any, index: number) => {
             return {
                 cellValue: '',
@@ -70,15 +85,16 @@ export default () => {
                 sheetId,
             }
         }) : [];
-        if (rowCount.length > 0) {
+
+        if (rowCount.length > 0) { // 新增列 =》 新增行
             for (let i = 0; i < listLineInfoDTO.length; i++) {
                 rowCount[i].push(listLineInfoDTO[i]);
             }
-            console.log('rowCount', rowCount)
             setRowCount([...rowCount]);
         }
+
         const { code } = await saveFieldThead({
-            chineseFieldName: `未命名` + (theadData.length + 1),
+            chineseFieldName: `未命名` + nameNum,
             sheetInfoId: sheetId,
             listLineInfoDTO,
         })
@@ -127,10 +143,9 @@ export default () => {
     }
 
     // 双击编辑单元格
-    const editCell = (index: number, idx: number) => {
-        rowCount[index][idx].isEdit = true;
+    const editCell = (ite: any, index: number) => {
+        rowCount[index].find((i: { fieldId: number; }) => i.fieldId === ite.fieldId).isEdit = true;
         setRowCount([...rowCount]);
-        // const cell_obj = rowCount[index][idx];
     }
 
     // 提交单元格数据（除表头以外）
@@ -143,16 +158,64 @@ export default () => {
         setRowCount([...rowCount]);
     }
 
-    // 记录鼠标事件
-    const mouseDownFn = (e: { button: any; }) => {
+    // 表头鼠标事件
+    const mouseDownFn = async (index: number, e: any) => {
         const { button } = e;
+        // 右键
         if (button === 2) {
-
-        } else if (button === 0) {
-            // alert("你点了左键");
-        } else if (button === 1) {
-            // alert("你点了滚轮");
+            await dropdownShow(index, true);
         }
+    }
+
+    // 单元格鼠标事件
+    const cellOnMouseDown = async (item: any, index: number, e: any) => {
+        const { button } = e;
+        // 右键
+        if (button === 2) {
+            await cellDropdownShow(item, index, true);
+        }
+    }
+
+    // 删除表头事件
+    const delTheadFn = async (index: number) => {
+        const { id } = theadData[index];
+        try {
+            const { code } = await delThead(id);
+            if (code === 200) {
+                await getInitData();
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    // 删除单元格 行
+    const delCellFn = async (item: any) => {
+        try {
+            const { code } = await delCellRow([item]);
+            if (code === 200) {
+                await getInitData();
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    // 控制表头弹出框的显隐
+    async function dropdownShow(index: number, isRight: boolean) {
+        theadData[index].dropDownVisible = !theadData[index].dropDownVisible;
+        theadData[index].isRight = !theadData[index].isRight;
+        form.setFieldsValue({
+            ...theadData[index]
+        })
+        setThead([...theadData]);
+    }
+
+    // 控制单元格弹出框的显隐
+    async function cellDropdownShow(item: any, index: number, isRight: boolean) {
+        console.log('item', item)
+        rowCount[index].find((i: { fieldId: number; }) => i.fieldId === item.fieldId).isRight = isRight;
+        setRowCount([...rowCount]);
     }
 
     // 修改表头数据后提交
@@ -199,6 +262,12 @@ export default () => {
         </div>
     );
 
+    const rightMenu = (index: number) => (
+        <div className="box-column-resizable-rightBox">
+            <Button onClick={() => delTheadFn(index)}>删除字段/列</Button>
+        </div>
+    )
+
     // 选中单元格
     const choseCell = (e: any) => {
         const args = Array.from(document.getElementsByClassName('react-resizable'));
@@ -207,6 +276,7 @@ export default () => {
         });
         e.target.style.borderColor = '#3370ff';
     }
+
     return (
         <div className="box">
             <div>
@@ -214,16 +284,14 @@ export default () => {
                     {
                         theadData?.map((item: any, index: number) => {
                             return (
-                                <div onMouseDown={mouseDownFn} key={item.chineseFieldName}>
+                                <div
+                                    onMouseDown={() => mouseDownFn(index, event)}
+                                    key={item.chineseFieldName}>
                                     <Dropdown
-                                        overlay={() => menu(index)}
+                                        overlay={() => { return item.isRight ? rightMenu(index) : menu(index) }}
                                         trigger={['click']}
-                                        onVisibleChange={(e) => {
-                                            theadData[index].dropDownVisible = e;
-                                            form.setFieldsValue({
-                                                ...theadData[index]
-                                            })
-                                            setThead([...theadData]);
+                                        onVisibleChange={async () => {
+                                            await dropdownShow(index, false);
                                         }}
                                         visible={item.dropDownVisible}>
                                         <a className="ant-dropdown-link"
@@ -247,25 +315,43 @@ export default () => {
                 <div>
                     {
                         rowCount.map((item: any, index: number) => (
-                            <div className="box-row-resizable" key={index} >
+                            <div className="box-row-resizable" key={index}>
                                 {
                                     item?.map((ite: any, idx: number) => {
                                         return (
                                             <div
-                                                onDoubleClick={() => editCell(index, idx)}
+                                                key={ite.id || ite.key}
+                                                onMouseDown={() => cellOnMouseDown(item.find((i: any) => i.fieldId === theadData[idx]?.id), index, event)}
+                                                onDoubleClick={() => editCell(item.find((i: any) => i.fieldId === theadData[idx]?.id), index)}
                                                 onClick={choseCell}
                                             >
-                                                <ResizableBox
-                                                    key={ite.id}
-                                                    width={70}
-                                                    height={40}
-                                                    draggableOpts={{}}
-                                                    minConstraints={[70, 40]}
-                                                    maxConstraints={[300, 40]}>
-                                                    {
-                                                        ite.isEdit ? <Input onBlur={(v) => submitCell(v, index, idx)} /> : <span>{ite.cellValue}</span>
-                                                    }
-                                                </ResizableBox>
+                                                <Dropdown
+                                                    overlay={() => {
+                                                        return <div className="box-column-resizable-rightBox">
+                                                            <Button onClick={() => delCellFn(item.find((i: any) => i.fieldId === theadData[idx]?.id))}>删除记录/行</Button>
+                                                        </div>
+                                                    }}
+                                                    trigger={['click']}
+                                                    onVisibleChange={async () => {
+                                                        await cellDropdownShow(item.find((i: any) => i.fieldId === theadData[idx]?.id), index, false);
+                                                    }}
+                                                    visible={ite.isRight}>
+                                                    <a className="ant-dropdown-link"
+                                                        onClick={e => { e.preventDefault(); }}>
+                                                        <ResizableBox
+
+                                                            width={70}
+                                                            height={40}
+                                                            draggableOpts={{}}
+                                                            minConstraints={[70, 40]}
+                                                            maxConstraints={[300, 40]}>
+                                                            {
+                                                                ite.isEdit ? <Input onBlur={(v) => submitCell(v, index, idx)} /> :
+                                                                    <span>{item.find((i: any) => i.fieldId === theadData[idx]?.id)?.cellValue}</span>
+                                                            }
+                                                        </ResizableBox>
+                                                    </a>
+                                                </Dropdown>
                                             </div>
                                         )
                                     })
@@ -288,6 +374,5 @@ export default () => {
                 <span onClick={addColumn}>新增一列</span>
             </div>
         </div>
-
     )
 }

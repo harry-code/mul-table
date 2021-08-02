@@ -63,3 +63,25 @@ export const saveOrUpdateLinesInfo = async (data: any) => {
 export const getSheetInfoExcludeThead = async (id: string) => {
     return await Get('/api/rest/mutipate/excel/listLineInfoVO/' + id);
 };
+
+/**
+ * 删除表头，级联删除行数据
+ */
+export const delThead = async (id: string) => {
+    return await Get('/api/rest/mutipate/excel/deleteField/' + id);
+};
+
+
+/**
+ * 删除单元格一行数据
+ */
+export const delCellRow = async (data: any) => {
+    return await Post('/api/rest/mutipate/excel/deleteLineInfo', data);
+};
+
+/**
+ * 分享sheet
+ */
+export const shareSheet = async (data: any) => {
+    return await Post('/api/rest/mutipate/excel/shareSheet', data);
+};

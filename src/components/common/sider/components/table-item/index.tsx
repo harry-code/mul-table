@@ -14,7 +14,6 @@ import {
   saveOrUpdateTableInfo,
   saveOrUpdateSheetInfo,
   getTableInfo,
-  getSheetInfo,
 } from '~/service/apis/table';
 import Pubsub from 'pubsub-js';
 import './index.less'
@@ -36,7 +35,7 @@ export default ({ }) => {
       const { code, data } = await getTableInfo();
       if (code === 200) {
         setTableItems(data);
-        // getSheetInfo(data[0]?.id);
+        Pubsub.publish('tableInfo', { ...data[0]?.listSheetInfoSummartVO[0], tableName: data[0].name });
       }
     } catch (error) {
       console.error(error);
@@ -85,25 +84,25 @@ export default ({ }) => {
 
   // 新增表
   const addTable = async () => {
-    let _arry: any = tableItems.concat([{
-      name: '未命名数据表' + (tableItems.length + 1),
-      actionVisible: false,
-      renameFlag: false,
-      // sheets: [
-      //   {
-      //     sheetName: '任务表1',
-      //     actionVisible: false,
-      //     renameFlag: false,
-      //   }
-      // ]
-    }])
+    // let _arry: any = tableItems.concat([{
+    //   name: '未命名数据表' + (tableItems.length + 1),
+    //   actionVisible: false,
+    //   renameFlag: false,
+    // sheets: [
+    //   {
+    //     sheetName: '任务表1',
+    //     actionVisible: false,
+    //     renameFlag: false,
+    //   }
+    // ]
+    // }])
 
     try {
       const { code } = await saveOrUpdateTableInfo({
         name: '未命名数据表' + (tableItems.length + 1)
       })
       if (code === 200) {
-        setTableItems(_arry)
+        await getTableInfoFn();
       }
     } catch (error) {
       console.error(error);
@@ -118,7 +117,6 @@ export default ({ }) => {
       tableInfoId: tableItems[i].id
     }
     try {
-      console.log('tableItems[i].listSheetInfoSummartVO', tableItems[i])
       const { code } = await saveOrUpdateSheetInfo(params)
       if (code === 200) {
         tableItems[i].listSheetInfoSummartVO = tableItems[i].listSheetInfoSummartVO || [];
@@ -159,14 +157,14 @@ export default ({ }) => {
       element.style.background = 'inherit';
     });
     e.currentTarget.style.background = 'rgba(31, 35, 41, 0.1)';
-    const jsonStr = JSON.stringify({
+    const jsonData = {
       tableInfoId: tableItems[index].id,
       tableName: tableItems[index].name,
       sheetId: tableItems[index].listSheetInfoSummartVO[idx].sheetId,
       sheetName: tableItems[index].listSheetInfoSummartVO[idx].sheetName,
-    })
-    localStorage.setItem('tableInfo', jsonStr);
-    Pubsub.publish('tableInfo', jsonStr);
+    };
+    localStorage.setItem('tableInfo', JSON.stringify(jsonData));
+    Pubsub.publish('tableInfo', jsonData);
   }
 
   const content = (i: number) => (
@@ -230,6 +228,7 @@ export default ({ }) => {
                     onBlur={async (v) => {
                       tableItems[index].renameFlag = !tableItems[index].renameFlag;
                       tableItems[index].name = v.target.defaultValue;
+                      console.log('tableItems', tableItems)
                       try {
                         const { code } = await saveOrUpdateTableInfo({
                           name: v.target.defaultValue,
