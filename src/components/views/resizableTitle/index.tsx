@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Dropdown, Input, Form, Select, Button } from 'antd';
+import { Dropdown, Input, Form, Select, Button, Space } from 'antd';
 import { ResizableBox } from 'react-resizable';
 import Pubsub from 'pubsub-js';
 import {
@@ -35,7 +35,9 @@ export default () => {
         // 监听表格信息变化
         Pubsub.subscribe('tableInfo', async (msg: string, data: any) => {
             const { sheetId } = data;
-            await getInitData(sheetId);
+            if (sheetId) {
+                await getInitData(sheetId);
+            }
         })
     }, [])
 
@@ -49,7 +51,6 @@ export default () => {
             }
             if (sheetInfo.code === 200) {
                 const { data } = sheetInfo;
-                console.log('data', data);
                 let _arry = [];
                 for (let i = 1; i < ROW_COUNT; i++) {
                     const res = data.filter((item: any) => item.lineNum === i);
@@ -76,12 +77,12 @@ export default () => {
         })
         setThead(_arry)
 
-        const listLineInfoDTO = rowCount.length > 0 ? rowCount.map((ite: any, index: number) => {
+        const listLineInfoDTO = rowCount.length > 0 ? rowCount.map((ite: any) => {
             return {
                 cellValue: '',
                 fieldId: '',
                 id: '',
-                lineNum: index + 1, // 行数
+                lineNum: ite[0]?.lineNum, // 行数
                 sheetId,
             }
         }) : [];
@@ -99,20 +100,22 @@ export default () => {
             listLineInfoDTO,
         })
         if (code === 200) {
-            const { code, data } = await getSheetThead(sheetId);
-            if (code === 200) {
-                setThead(data)
-            }
+            await getInitData(sheetId)
+            // const { code, data } = await getSheetThead(sheetId);
+            // if (code === 200) {
+            //     setThead(data)
+            // }
         }
     }
 
     // 新增一行
     const addRow = () => {
+        const lineNum = rowCount[rowCount.length-1]?.[0]?.lineNum + 1 || 1
         // 新增一行
         let params = theadData.map((item: any) => ({
             cellValue: '',
             fieldId: item.id,
-            lineNum: rowCount.length + 1, // 行数
+            lineNum, // 行数
             sheetId: JSON.parse(localStorage.getItem('tableInfo')!).sheetId,
             key: item.chineseFieldName || 1
         }))
@@ -126,19 +129,20 @@ export default () => {
         const { code } = await saveOrUpdateLinesInfo(params);
         const sheetId = JSON.parse(localStorage.getItem('tableInfo')!).sheetId;
         if (code === 200) {
-            const sheetInfo = await getSheetInfoExcludeThead(sheetId);
-            if (sheetInfo.code === 200) {
-                const { data } = sheetInfo;
-                let _arry = [];
-                for (let i = 1; i < ROW_COUNT; i++) {
-                    const res = data.filter((item: any) => item.lineNum === i);
-                    if (res.length === 0) {
-                        break
-                    }
-                    _arry.push(res)
-                }
-                setRowCount([..._arry]);
-            }
+            await getInitData(sheetId);
+            // const sheetInfo = await getSheetInfoExcludeThead(sheetId);
+            // if (sheetInfo.code === 200) {
+            //     const { data } = sheetInfo;
+            //     let _arry = [];
+            //     for (let i = 1; i < ROW_COUNT; i++) {
+            //         const res = data.filter((item: any) => item.lineNum === i);
+            //         if (res.length === 0) {
+            //             break
+            //         }
+            //         _arry.push(res)
+            //     }
+            //     setRowCount([..._arry]);
+            // }
         }
     }
 
@@ -182,7 +186,20 @@ export default () => {
         try {
             const { code } = await delThead(id);
             if (code === 200) {
-                await getInitData();
+                await getInitData(id);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    // 显示或者隐藏表头事件
+    const showOrhideThead = async (index: number) => {
+        theadData[index].isHide = Number(!theadData[index].isHide || true);
+        try {
+            const { code } = await saveFieldThead({...theadData[index]});
+            if (code === 200) {
+                await getInitData(theadData[index].sheetInfoId)
             }
         } catch (error) {
             console.error(error);
@@ -194,7 +211,7 @@ export default () => {
         try {
             const { code } = await delCellRow([item]);
             if (code === 200) {
-                await getInitData();
+                await getInitData(item.fieldId);
             }
         } catch (error) {
             console.error(error);
@@ -213,7 +230,6 @@ export default () => {
 
     // 控制单元格弹出框的显隐
     async function cellDropdownShow(item: any, index: number, isRight: boolean) {
-        console.log('item', item)
         rowCount[index].find((i: { fieldId: number; }) => i.fieldId === item.fieldId).isRight = isRight;
         setRowCount([...rowCount]);
     }
@@ -264,7 +280,10 @@ export default () => {
 
     const rightMenu = (index: number) => (
         <div className="box-column-resizable-rightBox">
-            <Button onClick={() => delTheadFn(index)}>删除字段/列</Button>
+            <Space>
+                <Button onClick={() => delTheadFn(index)}>删除字段/列</Button>
+                <Button onClick={() => showOrhideThead(index)}>隐藏字段/列</Button>
+            </Space>
         </div>
     )
 

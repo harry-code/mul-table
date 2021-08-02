@@ -4,6 +4,7 @@ import { LinkOutlined } from '@ant-design/icons';
 import { useHistory } from 'react-router-dom';
 import { getUsers } from '~/service/apis/user';
 import { shareSheet } from '~/service/apis/table';
+import LOGO from '~/assets/favicon.png';
 import './index.less'
 
 const { Option } = Select;
@@ -67,7 +68,7 @@ function Header() {
       >
         {
           users?.map((item: { userId: number; nickname: string }) => (
-            <Option value={item.userId}>{item.nickname}</Option>
+            <Option  key={item.userId} value={item.userId}>{item.nickname}</Option>
           ))
         }
       </Select>
@@ -77,7 +78,7 @@ function Header() {
   return (
     <div className="header">
       <div>
-        <img src="~/assets/favicon.png" alt="" />
+        <img src={LOGO} alt="" className="header-logo"/>
       </div>
       <Dropdown
         onVisibleChange={(e) => {

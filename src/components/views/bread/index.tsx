@@ -11,6 +11,6 @@ export default () => {
     }, [])
     const [tableInfo, setTableInfo] = useState<{ tableName: string, sheetName: string }>({ tableName: '未命名数据表1', sheetName: '任务表1' })
     return <>
-        <span>{tableInfo?.tableName} / {tableInfo?.sheetName}</span>
+        <span>{tableInfo?.tableName} / {tableInfo?.sheetName || '任务表1'}</span>
     </>
 }

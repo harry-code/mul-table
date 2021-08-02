@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useImperativeHandle } from 'react';
 import { Input, Popover, Collapse, Modal, Tooltip } from 'antd';
 import {
   PlusSquareOutlined,
@@ -21,8 +21,13 @@ import './index.less'
 const { confirm } = Modal;
 const { Panel } = Collapse;
 
-export default ({ }) => {
+export default ({ cRef }: { cRef: any }) => {
   const [tableItems, setTableItems] = useState<any[]>([]);
+  useImperativeHandle(cRef, () => ({
+    filterData
+  }));
+
+
   useEffect(() => {
     getTableInfoFn();
   }, [])
@@ -35,7 +40,7 @@ export default ({ }) => {
       const { code, data } = await getTableInfo();
       if (code === 200) {
         setTableItems(data);
-        Pubsub.publish('tableInfo', { ...data[0]?.listSheetInfoSummartVO[0], tableName: data[0].name });
+        Pubsub.publish('tableInfo', { ...data[0]?.listSheetInfoSummartVO[0], tableName: data[0]?.name });
       }
     } catch (error) {
       console.error(error);
@@ -44,6 +49,15 @@ export default ({ }) => {
 
   function callback(key: any) {
     console.log(key);
+  }
+
+  // 搜索数据
+  const filterData = async (str: string) => {
+    const { code, data } = await getTableInfo();
+    if (code === 200) {
+      const res = data.filter(ite => ite.name.includes(str));
+      setTableItems(res);
+    }
   }
 
   // 打开一级菜单操作气泡框
@@ -119,9 +133,10 @@ export default ({ }) => {
     try {
       const { code } = await saveOrUpdateSheetInfo(params)
       if (code === 200) {
-        tableItems[i].listSheetInfoSummartVO = tableItems[i].listSheetInfoSummartVO || [];
-        tableItems[i].listSheetInfoSummartVO.push(params);
-        setTableItems([...tableItems]);
+        await getTableInfoFn();
+        // tableItems[i].listSheetInfoSummartVO = tableItems[i].listSheetInfoSummartVO || [];
+        // tableItems[i].listSheetInfoSummartVO.push(params);
+        // setTableItems([...tableItems]);
       }
     } catch (error) {
       console.error(error);
@@ -268,7 +283,7 @@ export default ({ }) => {
                         onClick={event => {
                           event.stopPropagation();
                         }}
-                        className={item.actionVisible ? '' : "table-item-collapse-headerIcon"} />
+                        className={item.actionVisible ? 'table-item-collapse-headerIcon-change' : "table-item-collapse-headerIcon"} />
                     </Popover>
                   </>}>
 
