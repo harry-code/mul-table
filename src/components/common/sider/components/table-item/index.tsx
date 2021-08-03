@@ -14,6 +14,8 @@ import {
   saveOrUpdateTableInfo,
   saveOrUpdateSheetInfo,
   getTableInfo,
+  deleteTable,
+  deleteSheet,
 } from '~/service/apis/table';
 import Pubsub from 'pubsub-js';
 import './index.less'
@@ -23,10 +25,10 @@ const { Panel } = Collapse;
 
 export default ({ cRef }: { cRef: any }) => {
   const [tableItems, setTableItems] = useState<any[]>([]);
+  const [defaultName, setDefaultName] = useState<string>('');
   useImperativeHandle(cRef, () => ({
     filterData
   }));
-
 
   useEffect(() => {
     getTableInfoFn();
@@ -39,7 +41,8 @@ export default ({ cRef }: { cRef: any }) => {
     try {
       const { code, data } = await getTableInfo();
       if (code === 200) {
-        setTableItems(data);
+        setTableItems([...data]);
+        // setDefaultName(data[0]?.name)
         Pubsub.publish('tableInfo', { ...data[0]?.listSheetInfoSummartVO[0], tableName: data[0]?.name });
       }
     } catch (error) {
@@ -47,15 +50,11 @@ export default ({ cRef }: { cRef: any }) => {
     }
   }
 
-  function callback(key: any) {
-    console.log(key);
-  }
-
   // 搜索数据
   const filterData = async (str: string) => {
     const { code, data } = await getTableInfo();
     if (code === 200) {
-      const res = data.filter(ite => ite.name.includes(str));
+      const res = data.filter((ite: { name: string | string[]; }) => ite.name.includes(str));
       setTableItems(res);
     }
   }
@@ -77,11 +76,6 @@ export default ({ cRef }: { cRef: any }) => {
     tableItems[i].actionVisible = !tableItems[i].actionVisible;
     tableItems[i].renameFlag = !tableItems[i].renameFlag;
     setTableItems([...tableItems]);
-    setTimeout(() => {
-      // tableItems[i].inputRef.current!.focus({
-      //   cursor: 'all',
-      // });
-    }, 0)
   }
 
   // 重命名sheet
@@ -89,28 +83,10 @@ export default ({ cRef }: { cRef: any }) => {
     tableItems[first].listSheetInfoSummartVO[i].actionVisible = !tableItems[first].listSheetInfoSummartVO[i].actionVisible;
     tableItems[first].listSheetInfoSummartVO[i].renameFlag = !tableItems[first].listSheetInfoSummartVO[i].renameFlag;
     setTableItems([...tableItems]);
-    setTimeout(() => {
-      // tableItems[i].inputRef.current!.focus({
-      //   cursor: 'all',
-      // });
-    }, 0)
   }
 
   // 新增表
   const addTable = async () => {
-    // let _arry: any = tableItems.concat([{
-    //   name: '未命名数据表' + (tableItems.length + 1),
-    //   actionVisible: false,
-    //   renameFlag: false,
-    // sheets: [
-    //   {
-    //     sheetName: '任务表1',
-    //     actionVisible: false,
-    //     renameFlag: false,
-    //   }
-    // ]
-    // }])
-
     try {
       const { code } = await saveOrUpdateTableInfo({
         name: '未命名数据表' + (tableItems.length + 1)
@@ -134,9 +110,6 @@ export default ({ cRef }: { cRef: any }) => {
       const { code } = await saveOrUpdateSheetInfo(params)
       if (code === 200) {
         await getTableInfoFn();
-        // tableItems[i].listSheetInfoSummartVO = tableItems[i].listSheetInfoSummartVO || [];
-        // tableItems[i].listSheetInfoSummartVO.push(params);
-        // setTableItems([...tableItems]);
       }
     } catch (error) {
       console.error(error);
@@ -154,9 +127,43 @@ export default ({ cRef }: { cRef: any }) => {
       okText: '删除',
       okType: 'danger',
       cancelText: '取消',
-      onOk() {
-        tableItems.splice(i, 1);
-        setTableItems([...tableItems]);
+      async onOk() {
+        try {
+          const { code } = await deleteTable(tableItems[i].id);
+          if (code === 200) {
+            getTableInfoFn();
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      },
+      onCancel() {
+        console.log('Cancel');
+      },
+    });
+  }
+
+  // 删除sheet
+  const delSheet = (index: number, i: number) => {
+    const { sheetId, sheetName } = tableItems[index].listSheetInfoSummartVO[i];
+    confirm({
+      title: `删除sheet`,
+      centered: true,
+      maskClosable: true,
+      icon: <ExclamationCircleOutlined />,
+      content: `确认要删除 ${sheetName} 吗？`,
+      okText: '删除',
+      okType: 'danger',
+      cancelText: '取消',
+      async onOk() {
+        try {
+          const { code } = await deleteSheet(sheetId);
+          if (code === 200) {
+            getTableInfoFn();
+          }
+        } catch (error) {
+          console.error(error);
+        }
       },
       onCancel() {
         console.log('Cancel');
@@ -170,10 +177,12 @@ export default ({ cRef }: { cRef: any }) => {
     const args = Array.from(document.getElementsByClassName('table-item-collapse-sheet'));
     args.forEach((element: any) => {
       element.style.background = 'inherit';
+      element.style.color = 'inherit';
     });
     e.currentTarget.style.background = 'rgba(31, 35, 41, 0.1)';
+    e.currentTarget.style.color = '#3370ff';
     const jsonData = {
-      tableInfoId: tableItems[index].id,
+      tableInfoId: tableItems[index]?.id,
       tableName: tableItems[index].name,
       sheetId: tableItems[index].listSheetInfoSummartVO[idx].sheetId,
       sheetName: tableItems[index].listSheetInfoSummartVO[idx].sheetName,
@@ -218,22 +227,26 @@ export default ({ cRef }: { cRef: any }) => {
       </li>
       {
         tableItems.length > 1 ? <li
-          onClick={() => delTable(i)}>
-          <DeleteOutlined />
-          <span>删除sheet</span>
+          onClick={() => delSheet(first, i)}>
+          <DeleteOutlined
+            data-index={first}
+            data-idx={i} />
+          <span
+            data-index={first}
+            data-idx={i}>删除sheet</span>
         </li> : null
       }
 
     </ul >
   )
 
+  console.log('tableItems', tableItems);
   return (
     <div className="table-item">
       <Collapse
         className="table-item-collapse"
-        defaultActiveKey={['']}
-        ghost={true}
-        onChange={callback}>
+        defaultActiveKey={defaultName}
+        ghost={true}>
         {
           tableItems?.map((item: any, index: number) => {
             return (
@@ -259,7 +272,7 @@ export default ({ cRef }: { cRef: any }) => {
                     defaultValue={item.name}
                     className="table-item-wrapper-table"
                     width={120}
-                  /> : <span className="table-item-wrapper-table">{item.name}</span>
+                  /> : <span className="table-item-wrapper-table" title={item.name}>{item.name}</span>
                 }
                 className={item.actionVisible ? 'ant-collapse-header-active' : ''}
                 key={item.name} extra={item.renameFlag ? null :
@@ -319,10 +332,11 @@ export default ({ cRef }: { cRef: any }) => {
                               defaultValue={ite.sheetName}
                               className="table-item-wrapper-table"
                               width={120}
-                            /> : <span
-                              className="table-item-collapse-sheet-name"
-                              data-index={index}
-                              data-idx={idx}>{ite.sheetName}</span>
+                            /> :
+                              <span
+                                className="table-item-collapse-sheet-name"
+                                data-index={index}
+                                data-idx={idx}>{ite.sheetName}</span>
                           }
                         </div>
                         {/* 操作的气泡 */}

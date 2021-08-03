@@ -1,12 +1,11 @@
-import React, { useEffect, useState, forwardRef, useRef } from 'react';
-import { Input, Space } from 'antd';
-import { useHistory } from 'react-router-dom';
+import React, { forwardRef, useRef } from 'react';
+import { Input } from 'antd';
 import TableItem from './components/table-item/index';
 import './index.less'
 
 const { Search } = Input;
 const TableItemRef = forwardRef((props, ref) => {
-  return <TableItem cRef={ref}/>
+  return <TableItem cRef={ref} />
 })
 
 function Sider() {

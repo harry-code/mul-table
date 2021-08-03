@@ -14,12 +14,26 @@ export const saveOrUpdateTableInfo = async (data: any) => {
     return await Post('/api/rest/mutipate/excel/saveTable', data);
 };
 
+/**
+ * 删除表
+ */
+export const deleteTable = async (id: any) => {
+    return await Get('/api/rest/mutipate/excel/deleteTable/' + id);
+};
+
 
 /**
  * 创建sheet，更新sheet
  */
 export const saveOrUpdateSheetInfo = async (data: any) => {
     return await Post('/api/rest/mutipate/excel/saveSheet', data);
+};
+
+/**
+ * 删除sheet
+ */
+export const deleteSheet = async (id: string) => {
+    return await Get('/api/rest/mutipate/excel/deleteSheet/' + id);
 };
 
 /**

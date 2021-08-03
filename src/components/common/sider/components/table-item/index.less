@@ -1,5 +1,12 @@
 .table-item {
   &-collapse {
+    .ant-collapse-item:nth-child(1) {
+      .table-item-collapse-sheet {
+        background: rgba(31, 35, 41, 0.1);
+        color: rgb(51, 112, 255);
+      }
+    }
+
     .ant-collapse-header {
       &:hover {
         background: rgba(31, 35, 41, 0.1);
@@ -83,7 +90,7 @@
   &-add {
     border-top: 1px solid #dee0e3;
     margin-top: 20px;
-    padding: 15px 0;
+    padding: 15px 6px;
     cursor: pointer;
 
     span {
@@ -93,6 +100,14 @@
 
   &-add:hover {
     background: #dee0e3;
+  }
+
+  &-wrapper-table {
+    width: 120px;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
@@ -121,6 +136,7 @@
 }
 
 .ant-modal-root {
+
   .ant-modal-mask,
   .ant-modal-wrap {
     z-index: 1200;
